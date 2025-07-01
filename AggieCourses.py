@@ -4,8 +4,8 @@ from src.utils import load_keys
 import time 
 from pinecone import Pinecone 
 # from langchain_openai import ChatOpenAI
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_community.chat_models import ChatOpenAI
+from langchain_community.embeddings import OpenAIEmbeddings
 from pinecone import ServerlessSpec
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_experimental.text_splitter import SemanticChunker
@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 os.environ["OPENAI_API_KEY"] = load_keys()["openai"]
-os.environ["PINECONE_API_KEY"] = load_keys()["pinecone"]
+os.environ["PINECONE_API_KEY"] = load_keys()["pcsk_5iG23p_7bSMdSp7m9cRfDdVCeH9dyPJU4aZERYEXrudU8idA8Vrs7ArUfJ1BwC8sx2vb9g"]
 
 class AggieeRag:
 
