@@ -36,6 +36,8 @@ langchain
 langchain-community
 langchain-core
 langchain-openai
+langchain-experimental
+langchain-pinecone
 langsmith
 MarkupSafe==2.1.5
 marshmallow==3.21.3
@@ -80,5 +82,3 @@ pytest
 gunicorn
 selenium
 webdriver_manager
-langchain-experimental
-# -e .

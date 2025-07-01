@@ -1,165 +1,306 @@
 import os
 from src.utils import load_keys
-#import asyncio
 import time 
-from pinecone import Pinecone 
-# from langchain_openai import ChatOpenAI
-from langchain_community.chat_models import ChatOpenAI
-from langchain_community.embeddings import OpenAIEmbeddings
-from pinecone import ServerlessSpec
+import pinecone  # Simple import
+import google.generativeai as genai
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_experimental.text_splitter import SemanticChunker
-from langchain.vectorstores import Pinecone as PineconeLang
-from langchain_community.vectorstores.utils import DistanceStrategy
-
-from langchain.document_loaders import PyPDFDirectoryLoader
-
+from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain.schema import (
     SystemMessage,
     HumanMessage
 )
-
 from dotenv import load_dotenv
 load_dotenv()
 
-os.environ["OPENAI_API_KEY"] = load_keys()["openai"]
-os.environ["PINECONE_API_KEY"] = load_keys()["pcsk_5iG23p_7bSMdSp7m9cRfDdVCeH9dyPJU4aZERYEXrudU8idA8Vrs7ArUfJ1BwC8sx2vb9g"]
+# Load keys properly
+keys = load_keys()
+os.environ["OPENAI_API_KEY"] = keys.get("openai", "")
+os.environ["PINECONE_API_KEY"] = keys.get("pinecone", "")
+gemini_api_key = keys.get("gemini", "")
 
 class AggieeRag:
-
-    def __init__(self) -> None:
-        self.chatbot = ChatOpenAI( openai_api_key=os.environ["OPENAI_API_KEY"], model='gpt-4o-mini', temperature = 0.2)
-        self.embeddings = OpenAIEmbeddings(model="text-embedding-ada-002",api_key=os.environ["OPENAI_API_KEY"])
-        self.pine = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
-        self.spec = ServerlessSpec(
-                                    cloud="aws", region="us-east-1"
-                                  )
+    def __init__(self) -> None:  # Fixed __init__
+        # Check if API keys are properly set
+        if not gemini_api_key or gemini_api_key == "<Enter your Gemini API key here>":
+            raise ValueError("Please set your Gemini API key in Data/keys.txt")
+        if os.environ["PINECONE_API_KEY"] == "<Enter your own Pinecone key here>":
+            raise ValueError("Please set your Pinecone API key in Data/keys.txt")
+        
+        # Configure and initialize Gemini
+        genai.configure(api_key=gemini_api_key)
+        self.chatbot = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # For embeddings, use free HuggingFace since OpenAI key is empty
+        try:
+            from sentence_transformers import SentenceTransformer
+            self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            self.use_sentence_transformers = True
+            print("✅ Using free HuggingFace embeddings (384 dimensions)")
+        except ImportError:
+            raise ImportError("Please install sentence-transformers: pip install sentence-transformers")
+        
+        # Initialize Pinecone (fixed initialization)
+        pinecone.init(api_key=os.environ["PINECONE_API_KEY"], environment="us-east-1")
+        
         self.index_name = "indianconsti"
         self.index = self.init_pinecone()
+        
+        # System message for Gemini
+        self.system_prompt = """You are a University Course Information Assistant for Texas A&M University's CSCE (Computer Science & Engineering) and ECEN (Electrical & Computer Engineering) departments. 
+
+Your responsibilities:
+- Provide accurate, reliable information about graduate-level courses and programs
+- Base responses exclusively on the provided context from official PDFs and documents
+- Include specific details like course numbers, credit hours, prerequisites, and requirements
+- Help students understand degree plans, specializations, and academic policies
+
+Guidelines for responses:
+- Give detailed, helpful answers when context supports it
+- Include relevant course codes, credit hours, and prerequisites
+- Explain degree requirements clearly and completely
+- Reference specific policies and guidelines when mentioned in documents
+- If information is insufficient, clearly state what you don't know
+- Always be factual and avoid speculation beyond the provided documents
+
+Focus areas:
+- Course descriptions and requirements
+- MS and PhD degree plan requirements  
+- Specializations and research areas
+- Academic rules, guidelines, and policies
+- Prerequisites and course sequencing"""
+
         self.messages = [
-            SystemMessage(content= """You are University Course Information Assistant, designed to provide accurate, reliable information about graduate-level courses and programs from the CSCE (Computer Science & Engineering) and ECEN (Electrical & Computer Engineering) departments at Texas A&M University, College Station. Your responses must be drawn exclusively from the PDFs you have access to, which include official course listings, degree requirements, and graduate handbooks.
-
-When answering, provide detailed responses on:
-
-Course descriptions, including credit hours and prerequisites.
-Degree plan requirements for MS and PhD programs.
-Specializations and research areas within each department.
-Relevant rules, guidelines, or policies mentioned in the documents.
-Ensure that all answers are factual and directly referenced from the PDFs, avoiding any interpretation or information beyond what is included in the provided documents.""")]
+            SystemMessage(content=self.system_prompt)
+        ]
 
     def init_pinecone(self):
-        # connect to index
-        self.index = self.pine.Index(self.index_name)
-        time.sleep(1)
-        return self.index
+        """Connect to Pinecone index"""
+        try:
+            self.index = pinecone.Index(self.index_name)
+            time.sleep(1)
+            print(f"✅ Connected to Pinecone index: {self.index_name}")
+            return self.index
+        except Exception as e:
+            print(f"❌ Error connecting to Pinecone index '{self.index_name}': {e}")
+            print("💡 Make sure you have created the index in your Pinecone dashboard with:")
+            print("   • Name: indianconsti")
+            print("   • Dimensions: 384 (for HuggingFace embeddings)")
+            print("   • Metric: cosine")
+            print("   • Environment: us-east-1")
+            raise
     
     def generate_insert_embeddings_(self, docs):
+        """Generate and insert embeddings into Pinecone"""
+        print(f"🔄 Generating embeddings for {len(docs)} document chunks...")
+        batch_size = 50  # Smaller batches for free tier
+        
+        for i in range(0, len(docs), batch_size):
+            batch = docs[i:i + batch_size]
+            vectors_to_upsert = []
+            
+            try:
+                # Prepare texts for embedding
+                texts = [doc.page_content for doc in batch]
+                
+                # Generate embeddings using sentence transformers
+                embeddings_list = self.embedding_model.encode(texts).tolist()
+                
+                # Create vectors for Pinecone
+                for j, (doc, embedding) in enumerate(zip(batch, embeddings_list)):
+                    doc_id = str(i + j)
+                    
+                    vector_data = {
+                        "id": doc_id,
+                        "values": embedding,
+                        "metadata": {
+                            "text": doc.page_content[:1000],  # Limit text length for metadata
+                            "source": getattr(doc, 'metadata', {}).get('source', 'unknown'),
+                            "chunk_id": doc_id
+                        }
+                    }
+                    vectors_to_upsert.append(vector_data)
+                
+                # Upsert batch to Pinecone
+                self.index.upsert(vectors=vectors_to_upsert)
+                print(f"📤 Uploaded batch {i//batch_size + 1}/{(len(docs) + batch_size - 1)//batch_size}")
+                
+                # Small delay to avoid rate limiting
+                time.sleep(1)
+                
+            except Exception as e:
+                print(f"❌ Error processing batch {i//batch_size + 1}: {e}")
+                continue
+            
+        print("🎉 Embedding generation completed!")
 
-        for j in range(len(docs)):
-            embeddings = [{"metadata": ""}]
-
-            ids = [str(j)]
-
-            # Generate embeddings and ensure it's a flat list of floats
-            embeds = self.embeddings.embed_documents(docs[j].page_content)
-            embeddings[0]["metadata"]= str(docs[j].page_content)
-            #print(embeds)
-            # print(embeddings)
-            self.index.upsert(vectors=zip(ids, embeds, embeddings))
-    
-
-    def chunk_data(self, docs,chunk_size=800,chunk_overlap=50):
-        self.text_splitter=RecursiveCharacterTextSplitter(chunk_size=chunk_size,chunk_overlap=chunk_overlap)
-        self.doc=self.text_splitter.split_documents(docs)
+    def chunk_data(self, docs, chunk_size=800, chunk_overlap=50):
+        """Chunk documents into smaller pieces"""
+        self.text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap
+        )
+        self.doc = self.text_splitter.split_documents(docs)
+        print(f"✂️ Created {len(self.doc)} chunks from {len(docs)} documents")
         return self.doc
 
     def read_doc(self, directory):
-        file_loader=PyPDFDirectoryLoader(directory)
-        documents=file_loader.load()
-
+        """Read documents from directory"""
+        if not os.path.exists(directory):
+            raise FileNotFoundError(f"Directory '{directory}' not found. Please create it and add your files.")
+        
+        # Load text files
+        documents = []
+        for filename in os.listdir(directory):
+            if filename.endswith('.txt'):
+                filepath = os.path.join(directory, filename)
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        if content.strip():
+                            # Create a document-like object
+                            doc = type('Document', (), {
+                                'page_content': content,
+                                'metadata': {'source': filename}
+                            })()
+                            documents.append(doc)
+                except Exception as e:
+                    print(f"⚠️ Error reading {filename}: {e}")
+        
+        # Try to load PDFs
+        try:
+            file_loader = PyPDFDirectoryLoader(directory)
+            pdf_documents = file_loader.load()
+            documents.extend(pdf_documents)
+            print(f"📄 Loaded {len(pdf_documents)} PDF files")
+        except Exception as e:
+            print(f"Note: Could not load PDFs: {e}")
+        
+        if not documents:
+            raise ValueError(f"No readable documents found in '{directory}'. Please add some .txt or .pdf files.")
+            
+        print(f"📚 Loaded {len(documents)} documents from {directory}")
         return documents
     
+    def search_similar_chunks(self, query, k=3):
+        """Search for similar chunks in Pinecone"""
+        try:
+            # Generate query embedding
+            query_embedding = self.embedding_model.encode([query])[0].tolist()
+            
+            # Search in Pinecone
+            results = self.index.query(
+                vector=query_embedding,
+                top_k=k,
+                include_metadata=True
+            )
+            
+            # Extract relevant chunks
+            relevant_chunks = []
+            for match in results['matches']:
+                if match['score'] > 0.5:  # Similarity threshold
+                    relevant_chunks.append({
+                        'content': match['metadata'].get('text', ''),
+                        'source': match['metadata'].get('source', 'unknown'),
+                        'score': match['score']
+                    })
+            
+            return relevant_chunks
+            
+        except Exception as e:
+            print(f"❌ Error searching Pinecone: {e}")
+            return []
+    
     def augment_prompt(self, query: str):
-        vectorstore = PineconeLang(
-                        self.index,  self.embeddings.embed_query,"metadata", distance_strategy = DistanceStrategy.DOT_PRODUCT
-                        )
-        # get top 3 results from knowledge base
-        results = vectorstore.similarity_search(query, k=2)
-        # get the text from the results
-        source_knowledge = "\n".join([x.page_content for x in results])
-        # feed into an augmented prompt
-        augmented_prompt = f"""Using the contexts below, answer the query.
+        """Search Pinecone and generate response with Gemini"""
+        try:
+            # Search for relevant documents
+            relevant_chunks = self.search_similar_chunks(query, k=3)
+            
+            if not relevant_chunks:
+                return "I don't have specific information about that topic in my current database. Please try rephrasing your question or ask about Texas A&M CSCE/ECEN courses and degree requirements."
+            
+            # Extract text from results
+            source_knowledge = "\n\n---\n\n".join([
+                f"Source: {chunk['source']}\nContent: {chunk['content']}"
+                for chunk in relevant_chunks
+            ])
+            
+            # Create prompt for Gemini
+            full_prompt = f"""{self.system_prompt}
 
-        Contexts:
-        {source_knowledge}
+CONTEXT INFORMATION:
+{source_knowledge}
 
-        Query: {query}"""
-        return augmented_prompt
-    
+STUDENT QUESTION: {query}
 
-    
-# if __name__ == "__main__":
+Please provide a comprehensive and helpful response based on the context information above. Include specific details like course numbers, credit hours, prerequisites, and requirements when available."""
 
-#     llm = AggieeRag()
-
-#     ######################################################################
-#     ##To Generate new embedding -- Uncomment below line of code--
-#     print("Embedding Started")
-#     doc = llm.read_doc("Database/")
-#     documents=llm.chunk_data(docs=doc)
-#     #print(len(documents))
-#     embeddings = llm.generate_insert_embeddings_(documents)
-#     #####################################################################
-
-    # query = "what is degree requirement for MS in. computer engineering non thesis ecen department of texas a&m university"
-    # prompt = asyncio.run(llm.augment_prompt(query=query))
-    # prompt = HumanMessage(
-    # content=prompt
-    # )
-
-    # llm.messages.append(prompt)
-
-    # res = llm.chatbot(llm.messages)
-    # print("#############----Output----###########################")
-    # print(res.content)
+            # Generate response with Gemini
+            response = self.chatbot.generate_content(full_prompt)
+            
+            if response.text:
+                return response.text.strip()
+            else:
+                return "I apologize, but I couldn't generate a response. Please try rephrasing your question."
+            
+        except Exception as e:
+            print(f"❌ Error in augment_prompt: {e}")
+            return f"I encountered an error while processing your question: {str(e)}. Please try again."
 
 
-#-----------------------------------------------  MRR Testing #-----------------------------------------------#-----------------------------------------------#-----------------------------------------------#-----------------------------------------------
-        # def chunk_data(self, docs,chunk_size=800,chunk_overlap=50):
+# Compatibility wrapper for Gemini
+class GeminiChatBot:
+    def __init__(self, rag_system):  # Fixed __init__
+        self.rag_system = rag_system
 
-    #     #self.text_splitter=RecursiveCharacterTextSplitter(chunk_size=chunk_size,chunk_overlap=chunk_overlap)
-    #     self.text_splitter = SemanticChunker(
-    #         embeddings=self.embeddings,
-    #         buffer_size=1,
-    #         add_start_index=False,
-    #         breakpoint_threshold_type="percentile",
-    #         breakpoint_threshold_amount=95.0,
-    #         sentence_split_regex=r"(?<=[.?!])\s+"
-    #     )
+    def __call__(self, messages):  # Fixed __call__
+        # Extract the last human message
+        last_message = messages[-1].content if messages else ""
+        response_text = self.rag_system.augment_prompt(last_message)
         
-    #     self.doc=self.text_splitter.split_documents(docs)
-    #     #print(self.doc)
-    #     return self.doc
-    
-        # async def augment_prompt(self, query: str, mmr_lambda: float = 0.5):
-    #     vectorstore = PineconeLang(
-    #                     self.index,  self.embeddings.embed_query,"metadata", distance_strategy = DistanceStrategy.COSINE
-    #                     )
-    #     results = await vectorstore.amax_marginal_relevance_search(query, k=3, fetch_k=10, lambda_mult=mmr_lambda)
-    #     # get top 3 results from knowledge base
-    #     #results = vectorstore.similarity_search(query, k=3)
-    #     # get the text from the results
-    #     print(results)
-    #     source_knowledge = "\n".join([x.page_content for x in results])
-    #     print("*************************************************************************************************************************************")
-    #     print(source_knowledge)
-    #     print("*************************************************************************************************************************************")
+        # Return a response object compatible with existing code
+        class Response:
+            def __init__(self, content):  # Fixed __init__
+                self.content = content
+        
+        return Response(response_text)
 
-    #     # feed into an augmented prompt
-    #     augmented_prompt = f"""Using the contexts below, answer the query.
 
-    #     Contexts:
-    #     {source_knowledge}
-
-    #     Query: {query}"""
-    #     return augmented_prompt
+# Example usage for generating embeddings
+if __name__ == "__main__":  # Fixed __name__
+    try:
+        print("🚀 Initializing Gemini + Pinecone RAG system...")
+        llm = AggieeRag()
+        
+        # Check if Database folder exists
+        if not os.path.exists("Database/"):
+            print("❌ Database/ folder not found")
+            print("💡 Please run: python create_simple_data.py")
+            exit(1)
+        
+        # Generate embeddings
+        print("📖 Reading documents...")
+        docs = llm.read_doc("Database/")
+        
+        print("✂️ Chunking documents...")
+        documents = llm.chunk_data(docs=docs)
+        
+        print("🚀 Generating and uploading embeddings to Pinecone...")
+        llm.generate_insert_embeddings_(documents)
+        
+        print("\n🎉 SUCCESS! Embeddings generated and uploaded to Pinecone")
+        print("✅ Your Gemini + Pinecone RAG system is ready!")
+        
+        # Test the system
+        test_query = "What are the requirements for MS in Computer Science?"
+        print(f"\n🧪 Testing with query: {test_query}")
+        response = llm.augment_prompt(test_query)
+        print(f"🤖 Response: {response}")
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        print("\n🔧 Troubleshooting:")
+        print("1. Make sure Gemini and Pinecone API keys are set in Data/keys.txt")
+        print("2. Ensure Pinecone index 'indianconsti' exists with 384 dimensions")
+        print("3. Check that Database/ folder has documents")
+        print("4. Install required packages: pip install sentence-transformers")
