@@ -1,5 +1,5 @@
 {
-    "pinecone": "pcsk_5iG23p_7bSMdSp7m9cRfDdVCeH9dyPJU4aZERYEXrudU8idA8Vrs7ArUfJ1BwC8sx2vb9g",
-    "gemini": "AIzaSyBBZfAY29Yoq9ZoQHYk0NqDfQBzjrodNVs",
+    "pinecone": "",
+    "gemini": "",
     "openai":""
 }
