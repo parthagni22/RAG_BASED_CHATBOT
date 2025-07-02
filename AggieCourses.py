@@ -40,8 +40,11 @@ class AggieeRag:
             raise ImportError("Please install sentence-transformers: pip install sentence-transformers")
         
         # Initialize Pinecone (fixed initialization)
-        pinecone.init(api_key=os.environ["PINECONE_API_KEY"], environment="us-east-1")
-        
+        pinecone.init(api_key=os.environ["PINECONE_API_KEY"],environment="aped-4627-b74a")
+        # pinecone.init(
+        #     api_key=os.environ["PINECONE_API_KEY"],
+        #     host="https://indianconsti-ohthscz.svc.aped-4627-b74a.pinecone.io"  # Your actual host URL
+        # )
         self.index_name = "indianconsti"
         self.index = self.init_pinecone()
         
@@ -81,12 +84,7 @@ Focus areas:
             print(f"✅ Connected to Pinecone index: {self.index_name}")
             return self.index
         except Exception as e:
-            print(f"❌ Error connecting to Pinecone index '{self.index_name}': {e}")
-            print("💡 Make sure you have created the index in your Pinecone dashboard with:")
-            print("   • Name: indianconsti")
-            print("   • Dimensions: 384 (for HuggingFace embeddings)")
-            print("   • Metric: cosine")
-            print("   • Environment: us-east-1")
+            print(f" Error connecting to Pinecone index '{self.index_name}': {e}")
             raise
     
     def generate_insert_embeddings_(self, docs):
@@ -292,7 +290,7 @@ if __name__ == "__main__":  # Fixed __name__
         print("✅ Your Gemini + Pinecone RAG system is ready!")
         
         # Test the system
-        test_query = "What are the requirements for MS in Computer Science?"
+        test_query = "Texas A&M CSCE/ECEN courses and degree requirements"
         print(f"\n🧪 Testing with query: {test_query}")
         response = llm.augment_prompt(test_query)
         print(f"🤖 Response: {response}")

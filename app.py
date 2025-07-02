@@ -1,6 +1,6 @@
 from flask import Flask, request, render_template
 from AggieCourses import *
-from pinecone import Pinecone
+import pinecone
 
 application = Flask(__name__)
 
@@ -28,8 +28,10 @@ def reports():
 
             llm.messages.append(prompt)
 
-            res = llm.chatbot(llm.messages)
-            response= {"message":res.content}
+            #res = llm.chatbot(llm.messages)
+            #response= {"message":res.content}
+            res = llm.augment_prompt(query)
+            response = {"message": res}
             print("#############----Output----##########################")
             return(response)
 
