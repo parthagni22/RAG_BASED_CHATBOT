@@ -420,3 +420,6 @@ __marimo__/
 
 # Ignore sensitive keys file
 data/keys.txt
+
+# Ignore venv_new directory
+venv_new/
