@@ -1,0 +1,28 @@
+CSCE 636 - Deep Learning
+
+
+            CSCE 636 - Deep Learning (3 credit hours)
+            
+            Prerequisites: CSCE 633 (Machine Learning) or equivalent, Linear Algebra, Calculus
+            
+            Course Description:
+            Introduction to deep learning methods and applications. Topics include neural networks,
+            convolutional neural networks, recurrent neural networks, autoencoders, generative
+            adversarial networks, and transformer architectures.
+            
+            Learning Objectives:
+            - Understand fundamental concepts of deep learning
+            - Implement neural networks from scratch
+            - Apply deep learning to computer vision and NLP tasks
+            - Use popular deep learning frameworks (PyTorch, TensorFlow)
+            
+            Projects:
+            - Image classification using CNNs
+            - Sentiment analysis with RNNs
+            - Final project on chosen topic
+            
+            Grading:
+            - Projects: 50%
+            - Midterm: 20%
+            - Final: 30%
+            

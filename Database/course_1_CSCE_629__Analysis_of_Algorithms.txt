@@ -1,0 +1,25 @@
+CSCE 629 - Analysis of Algorithms
+
+
+            CSCE 629 - Analysis of Algorithms (3 credit hours)
+            
+            Prerequisites: CSCE 221 (Data Structures & Algorithms) and CSCE 222 (Discrete Structures)
+            
+            Course Description:
+            Advanced study of algorithms and their analysis. Topics include asymptotic analysis, 
+            divide-and-conquer algorithms, dynamic programming, greedy algorithms, graph algorithms, 
+            network flows, linear programming, NP-completeness, and approximation algorithms.
+            
+            Learning Objectives:
+            - Analyze the time and space complexity of algorithms
+            - Design efficient algorithms for computational problems
+            - Understand advanced algorithmic techniques
+            - Apply mathematical tools for algorithm analysis
+            
+            Grading:
+            - Homework: 30%
+            - Midterm Exam: 30%
+            - Final Exam: 40%
+            
+            Textbook: "Introduction to Algorithms" by Cormen, Leiserson, Rivest, and Stein
+            

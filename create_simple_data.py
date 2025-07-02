@@ -5,13 +5,8 @@ This creates sample course information as text files that can be processed
 """
 
 import os
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.units import inch
 
-def create_sample_pdf_content():
+def create_sample_content():
     """Create sample academic content"""
     
     sample_courses = [
@@ -186,15 +181,72 @@ def create_sample_pdf_content():
     
     return sample_courses
 
+def create_simple_text_files():
+    """Create simple text files"""
+    
+    if not os.path.exists("Database"):
+        os.makedirs("Database")
+        print("✅ Created Database/ directory")
+    
+    sample_courses = create_sample_content()
+    
+    for i, course in enumerate(sample_courses):
+        filename = f"Database/course_{i+1}_{course['title'].replace(' ', '_').replace('-', '').replace('/', '_')}.txt"
+        
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(course['title'] + '\n\n')
+            f.write(course['content'])
+        
+        print(f"✅ Created {filename}")
+    
+    print(f"\n🎉 Successfully created {len(sample_courses)} sample text files!")
+    return len(sample_courses)
+
+def main():
+    """Main function to create sample data"""
+    print("🚀 Creating sample academic data for testing...")
+    print("-" * 50)
+    
+    # Try to import reportlab for PDF creation
+    try:
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.units import inch
+        
+        # Create PDFs
+        print("📄 Creating PDF files...")
+        create_sample_pdfs()
+        
+    except ImportError:
+        print("📝 reportlab not installed. Creating text files instead...")
+        print("💡 To create PDFs, install reportlab: pip install reportlab")
+        create_simple_text_files()
+    
+    print("\n🎯 Next steps:")
+    print("1. Run: python AggieCourses.py")
+    print("   This will generate embeddings and upload to Pinecone")
+    print("2. Run: python app.py")
+    print("3. Test the chatbot with questions like:")
+    print("   - 'What are the requirements for MS in Computer Science?'")
+    print("   - 'Tell me about CSCE 629'")
+    print("   - 'What are the PhD requirements for ECEN?'")
+
 def create_sample_pdfs():
     """Create sample PDF files for testing"""
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    from reportlab.lib.units import inch
     
     # Create Database directory
     if not os.path.exists("Database"):
         os.makedirs("Database")
         print("✅ Created Database/ directory")
     
-    sample_courses = create_sample_pdf_content()
+    sample_courses = create_sample_content()
     
     for i, course in enumerate(sample_courses):
         filename = f"Database/course_{i+1}_{course['title'].replace(' ', '_').replace('-', '').replace('/', '_')}.pdf"
@@ -222,59 +274,6 @@ def create_sample_pdfs():
     
     print(f"\n🎉 Successfully created {len(sample_courses)} sample PDF files!")
     return len(sample_courses)
-
-def create_simple_text_files():
-    """Alternative: Create simple text files if PDF creation fails"""
-    
-    if not os.path.exists("Database"):
-        os.makedirs("Database")
-        print("✅ Created Database/ directory")
-    
-    sample_courses = create_sample_pdf_content()
-    
-    for i, course in enumerate(sample_courses):
-        filename = f"Database/course_{i+1}.txt"
-        
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(course['title'] + '\n\n')
-            f.write(course['content'])
-        
-        print(f"✅ Created {filename}")
-    
-    print(f"\n🎉 Successfully created {len(sample_courses)} sample text files!")
-    return len(sample_courses)
-
-def main():
-    """Main function to create sample data"""
-    print("🚀 Creating sample academic data for testing...")
-    print("-" * 50)
-    
-    try:
-        # Try to create PDFs first
-        count = create_sample_pdfs()
-        print(f"\n📚 Created {count} sample PDF files in Database/ folder")
-        print("📝 These files contain sample course information for CSCE and ECEN departments")
-        
-    except ImportError:
-        print("⚠️  reportlab not installed. Creating text files instead...")
-        print("💡 To create PDFs, install reportlab: pip install reportlab")
-        count = create_simple_text_files()
-        print(f"\n📚 Created {count} sample text files in Database/ folder")
-    
-    except Exception as e:
-        print(f"❌ Error creating PDFs: {e}")
-        print("📄 Creating text files as fallback...")
-        count = create_simple_text_files()
-        print(f"\n📚 Created {count} sample text files in Database/ folder")
-    
-    print("\n🎯 Next steps:")
-    print("1. Create your Pinecone index named 'indianconsti'")
-    print("2. Run: python generate_embeddings.py")
-    print("3. Run: python app.py")
-    print("4. Test the chatbot with questions like:")
-    print("   - 'What are the requirements for MS in Computer Science?'")
-    print("   - 'Tell me about CSCE 629'")
-    print("   - 'What are the PhD requirements for ECEN?'")
 
 if __name__ == "__main__":
     main()

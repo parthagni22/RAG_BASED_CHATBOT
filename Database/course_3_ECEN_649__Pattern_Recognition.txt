@@ -1,0 +1,27 @@
+ECEN 649 - Pattern Recognition
+
+
+            ECEN 649 - Pattern Recognition (3 credit hours)
+            
+            Prerequisites: ECEN 601 (Linear System Theory) and knowledge of probability theory
+            
+            Course Description:
+            Statistical and structural approaches to pattern recognition. Topics include 
+            Bayesian decision theory, parametric and non-parametric classification methods,
+            feature selection and extraction, clustering algorithms, and neural networks.
+            
+            Learning Objectives:
+            - Understand statistical pattern recognition theory
+            - Implement classification and clustering algorithms
+            - Apply pattern recognition to real-world problems
+            - Evaluate classifier performance
+            
+            Laboratory Component:
+            Hands-on implementation of pattern recognition algorithms using MATLAB and Python
+            
+            Grading:
+            - Homework: 25%
+            - Lab Reports: 25%
+            - Midterm: 25%
+            - Final Project: 25%
+            

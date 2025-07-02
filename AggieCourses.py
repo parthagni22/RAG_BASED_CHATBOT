@@ -1,7 +1,7 @@
 import os
 from src.utils import load_keys
 import time 
-import pinecone  # Simple import
+from pinecone import Pinecone  # Updated import
 import google.generativeai as genai
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFDirectoryLoader
@@ -19,7 +19,7 @@ os.environ["PINECONE_API_KEY"] = keys.get("pinecone", "")
 gemini_api_key = keys.get("gemini", "")
 
 class AggieeRag:
-    def __init__(self) -> None:  # Fixed __init__
+    def __init__(self) -> None:
         # Check if API keys are properly set
         if not gemini_api_key or gemini_api_key == "<Enter your Gemini API key here>":
             raise ValueError("Please set your Gemini API key in Data/keys.txt")
@@ -39,12 +39,8 @@ class AggieeRag:
         except ImportError:
             raise ImportError("Please install sentence-transformers: pip install sentence-transformers")
         
-        # Initialize Pinecone (fixed initialization)
-        pinecone.init(api_key=os.environ["PINECONE_API_KEY"],environment="aped-4627-b74a")
-        # pinecone.init(
-        #     api_key=os.environ["PINECONE_API_KEY"],
-        #     host="https://indianconsti-ohthscz.svc.aped-4627-b74a.pinecone.io"  # Your actual host URL
-        # )
+        # Initialize Pinecone (UPDATED METHOD)
+        self.pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
         self.index_name = "indianconsti"
         self.index = self.init_pinecone()
         
@@ -79,12 +75,13 @@ Focus areas:
     def init_pinecone(self):
         """Connect to Pinecone index"""
         try:
-            self.index = pinecone.Index(self.index_name)
+            # Get the index using the new Pinecone client
+            self.index = self.pc.Index(self.index_name)
             time.sleep(1)
             print(f"✅ Connected to Pinecone index: {self.index_name}")
             return self.index
         except Exception as e:
-            print(f" Error connecting to Pinecone index '{self.index_name}': {e}")
+            print(f"❌ Error connecting to Pinecone index '{self.index_name}': {e}")
             raise
     
     def generate_insert_embeddings_(self, docs):
@@ -195,7 +192,7 @@ Focus areas:
             # Extract relevant chunks
             relevant_chunks = []
             for match in results['matches']:
-                if match['score'] > 0.5:  # Similarity threshold
+                if match['score'] > 0.1:  # Lowered similarity threshold for HuggingFace embeddings
                     relevant_chunks.append({
                         'content': match['metadata'].get('text', ''),
                         'source': match['metadata'].get('source', 'unknown'),
@@ -248,24 +245,24 @@ Please provide a comprehensive and helpful response based on the context informa
 
 # Compatibility wrapper for Gemini
 class GeminiChatBot:
-    def __init__(self, rag_system):  # Fixed __init__
+    def __init__(self, rag_system):
         self.rag_system = rag_system
 
-    def __call__(self, messages):  # Fixed __call__
+    def __call__(self, messages):
         # Extract the last human message
         last_message = messages[-1].content if messages else ""
         response_text = self.rag_system.augment_prompt(last_message)
         
         # Return a response object compatible with existing code
         class Response:
-            def __init__(self, content):  # Fixed __init__
+            def __init__(self, content):
                 self.content = content
         
         return Response(response_text)
 
 
 # Example usage for generating embeddings
-if __name__ == "__main__":  # Fixed __name__
+if __name__ == "__main__":
     try:
         print("🚀 Initializing Gemini + Pinecone RAG system...")
         llm = AggieeRag()

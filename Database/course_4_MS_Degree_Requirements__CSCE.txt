@@ -1,0 +1,40 @@
+MS Degree Requirements - CSCE
+
+
+            Master of Science in Computer Science and Engineering
+            
+            Degree Requirements:
+            
+            Thesis Option (32 credit hours):
+            - Core courses: 12 credit hours
+            - Elective courses: 14 credit hours  
+            - Thesis: 6 credit hours (CSCE 691)
+            
+            Non-Thesis Option (36 credit hours):
+            - Core courses: 12 credit hours
+            - Elective courses: 21 credit hours
+            - Project: 3 credit hours (CSCE 689)
+            
+            Core Course Requirements:
+            Students must take courses from at least 3 of the following areas:
+            1. Algorithms and Theory
+            2. Computer Systems
+            3. Software Engineering
+            4. Artificial Intelligence/Machine Learning
+            5. Computer Graphics/Visualization
+            6. Computer Networks
+            
+            Research Areas:
+            - Artificial Intelligence and Machine Learning
+            - Computer Systems and Architecture
+            - Cybersecurity
+            - Data Science and Analytics
+            - Human-Computer Interaction
+            - Software Engineering
+            
+            Admission Requirements:
+            - Bachelor's degree in Computer Science or related field
+            - GPA: 3.0 or higher
+            - GRE scores (recommended)
+            - Letters of recommendation
+            
