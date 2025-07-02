@@ -134,7 +134,7 @@ RAG_BASED_CHATBOT/
 ### Customization Options
 
 - **Embedding Model**: Currently uses `all-MiniLM-L6-v2` (384 dimensions)
-- **LLM Model**: Uses `gemini-1.5-flash` for responses
+- **LLM Model**: Uses `gemini-2.5-flash` for responses
 - **Chunk Size**: 800 characters with 50 character overlap
 - **Search Results**: Returns top 3 most relevant chunks
 

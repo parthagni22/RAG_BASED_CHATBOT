@@ -28,7 +28,7 @@ class AggieeRag:
         
         # Configure and initialize Gemini
         genai.configure(api_key=gemini_api_key)
-        self.chatbot = genai.GenerativeModel('gemini-1.5-flash')
+        self.chatbot = genai.GenerativeModel('gemini-2.5-flash')
         
         # For embeddings, use free HuggingFace since OpenAI key is empty
         try:
