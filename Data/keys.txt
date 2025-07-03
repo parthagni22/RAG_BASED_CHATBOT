@@ -1,5 +1,0 @@
-{
-    "pinecone": "",
-    "gemini": "",
-    "openai":""
-}
