@@ -1,4 +1,4 @@
-# Aggie Course Navigator 🎓
+# Aggie Course Navigator  🎓 --experimental
 
 A Retrieval-Augmented Generation (RAG) system designed to help Texas A&M University students navigate CSCE (Computer Science & Engineering) and ECEN (Electrical & Computer Engineering) course information using AI-powered conversational interface.
 
