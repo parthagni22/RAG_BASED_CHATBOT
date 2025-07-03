@@ -46,6 +46,7 @@ A Retrieval-Augmented Generation (RAG) system designed to help Texas A&M Univers
 - Python 3.8 or higher
 - Node.js (for React frontend)
 - Google Gemini API key (free)
+- UV or pip for package management
 
 ### Installation
 
@@ -55,100 +56,124 @@ A Retrieval-Augmented Generation (RAG) system designed to help Texas A&M Univers
    cd aggie-course-navigator
    ```
 
-2. **Run Setup Script**
+2. **Backend Setup**
+   ```bash
+   cd backend
+
+   # Option 1: Using UV (recommended)
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   uv pip install -r requirements.txt
+
+   # Option 2: Using pip
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. **Environment Configuration**
+   ```bash
+   # Copy the example environment file
+   cp .env.example .env
+
+   # Edit .env and add your API keys
+   # At minimum, you need a Gemini API key
+   ```
+
+4. **Create Sample Data (Optional)**
    ```bash
    python setup.py
    ```
-   This will:
-   - Install all dependencies
-   - Create necessary directories
-   - Set up API keys interactively
-   - Create sample course data
-   - Initialize the system
+   This will create sample course data and initialize directories.
 
-3. **Start the Backend**
+5. **Start the Backend**
    ```bash
    python app.py
    ```
    Server runs on `http://localhost:8080`
 
-4. **Start the Frontend**
+6. **Frontend Setup**
    ```bash
-   cd frontend  # Navigate to your React app
+   cd frontend
    npm install
-   npm start
-   ```
 
-### Manual Setup (Alternative)
+   # Copy frontend environment file
+   cp .env.example .env
 
-1. **Install Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Configure API Keys**
-   Create `Data/keys.txt`:
-   ```json
-   {
-     "gemini": "your_gemini_api_key_here",
-     "pinecone": "your_pinecone_api_key_here",
-     "openai": "your_openai_api_key_here"
-   }
-   ```
-
-3. **Add Course Data**
-   Place your course files in `Database/` directory:
-   - Text files (.txt)
-   - PDF files (.pdf)
-
-4. **Start the Application**
-   ```bash
-   python app.py
+   # Start the frontend
+   npm run dev
    ```
 
 ## 📁 Project Structure
 
 ```
 aggie-course-navigator/
-├── app.py                 # Main Flask application
-├── rag_system.py         # Core RAG system implementation
-├── config.py             # Configuration management
-├── setup.py              # Automated setup script
-├── .env
-├── .gitignore
-├── requirements.txt      # Python dependencies
-├── Database/            # Course documents directory
-│   ├── csce_629_algorithms.txt
-│   ├── csce_636_deep_learning.txt
-│   └── ms_degree_requirements.txt
-├── frontend/           # react
-│   ├── .env
+├── backend/
+│   ├── app.py                 # Main Flask application
+│   ├── rag_system.py         # Core RAG system implementation
+│   ├── config.py             # Configuration management
+│   ├── setup.py              # Automated setup script
+│   ├── .env                  # Environment variables (create from .env.example)
+│   ├── .env.example          # Example environment file
 │   ├── .gitignore
-│   ├── other react files
-├── cache/              # Vector embeddings cache
-├── logs/               # Application logs
+│   ├── requirements.txt      # Python dependencies
+│   ├── Database/            # Course documents directory
+│   │   ├── csce_629_algorithms.txt
+│   │   ├── csce_636_deep_learning.txt
+│   │   └── ms_degree_requirements.txt
+│   ├── cache/              # Vector embeddings cache
+│   └── logs/               # Application logs
+├── frontend/               # React frontend
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   ├── .env.example
+│   └── .env
 └── README.md
 ```
 
 ## 🔧 Configuration
 
 ### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
 ```bash
-# Optional: Override config values
-export GEMINI_API_KEY="your_key_here"
-export PINECONE_API_KEY="your_key_here"
-export OPENAI_API_KEY="your_key_here"
-export DEBUG="true"
-export HOST="0.0.0.0"
-export PORT="8080"
+# Required: API Keys
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Optional: Enhanced features
+PINECONE_API_KEY=your_pinecone_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Server Configuration
+DEBUG=true
+HOST=0.0.0.0
+PORT=8080
+
+# Vector Storage: 'local' or 'pinecone'
+VECTOR_STORAGE=local
+
+# Embedding Model: 'sentence-transformers' or 'openai'
+EMBEDDING_MODEL=sentence-transformers
 ```
 
-### Configuration Options
-- **Embedding Models**: OpenAI (better quality) or SentenceTransformers (free)
-- **Vector Storage**: Pinecone (cloud) or Local (file-based)
-- **Chunk Size**: Default 800 characters with 100 character overlap
-- **Similarity Threshold**: Default 0.1 for search results
-- **Max Results**: Default 3 relevant documents per query
+### Getting API Keys
+
+1. **Gemini API Key** (Required, Free):
+   - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Create a new API key
+   - Add to your `.env` file
+
+2. **Pinecone API Key** (Optional, for cloud storage):
+   - Sign up at [Pinecone](https://app.pinecone.io/)
+   - Create a new project
+   - Get your API key from the dashboard
+
+3. **OpenAI API Key** (Optional, for better embeddings):
+   - Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+   - Create a new API key
+   - Note: This is a paid service
 
 ## 🛠️ API Endpoints
 
@@ -211,7 +236,7 @@ curl -X POST http://localhost:8080/api/reindex
 
 ## 📚 Adding New Course Data
 
-1. **Add Documents**: Place new `.txt` or `.pdf` files in `Database/` directory
+1. **Add Documents**: Place new `.txt` or `.pdf` files in `backend/Database/` directory
 2. **Reindex**: The system will automatically detect and index new files
 3. **Manual Reindex**: Use `/api/reindex` endpoint if needed
 
@@ -229,37 +254,38 @@ curl -X POST http://localhost:8080/api/reindex
 **1. API Key Errors**
 ```
 Error: Gemini API key is required
-Solution: Check Data/keys.txt or environment variables
+Solution: Check .env file and ensure GEMINI_API_KEY is set
 ```
 
 **2. No Documents Found**
 ```
 Error: No documents found in Database/
-Solution: Add .txt or .pdf files to Database/ directory
+Solution: Add .txt or .pdf files to backend/Database/ directory
 ```
 
 **3. Port Already in Use**
 ```
 Error: Port 8080 is already in use
-Solution: Change port in config.py or kill existing process
+Solution: Change PORT in .env file or kill existing process
 ```
 
-**4. Memory Issues**
+**4. Virtual Environment Issues**
 ```
-Error: Out of memory during embedding generation
-Solution: Reduce chunk_size in config.py or use smaller documents
+Error: Module not found
+Solution: Ensure virtual environment is activated:
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 ```
 
 ### Debug Mode
+Enable debug mode in your `.env` file:
 ```bash
-export DEBUG=true
-python app.py
+DEBUG=true
 ```
 
 ## 🔐 Security Considerations
 
-- **API Keys**: Never commit API keys to version control
-- **CORS**: Configure CORS origins for production
+- **API Keys**: Never commit `.env` files to version control
+- **CORS**: Configure CORS_ORIGINS for production
 - **Input Validation**: System validates query length and content
 - **Rate Limiting**: Consider implementing rate limiting for production
 
@@ -268,7 +294,7 @@ python app.py
 ### For Large Document Sets
 - Use Pinecone for cloud-based vector storage
 - Enable OpenAI embeddings for better quality
-- Adjust chunk size based on document type
+- Adjust CHUNK_SIZE based on document type
 - Monitor memory usage and optimize accordingly
 
 ### Caching Strategy
@@ -278,8 +304,10 @@ python app.py
 
 ## 🧪 Testing
 
-### Test the System
+### Test the Backend
 ```bash
+cd backend
+source .venv/bin/activate
 python -c "
 from rag_system import RAGSystem
 rag = RAGSystem()
@@ -322,5 +350,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📞 Support
 
--  Create an issue with detailed error information
-
+Create an issue with detailed error information for support.
